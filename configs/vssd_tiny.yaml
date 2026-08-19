@@ -1,0 +1,12 @@
+model:
+  name: vssd_tiny
+  task: backbone
+  channels: [96, 192, 384, 768]
+  depths: [2, 2, 8, 2]
+  num_heads: [4, 4, 8, 16]
+  state_dims: [12, 24, 48, 64]
+  mlp_ratio: 3.0
+  expand: 1.0
+  drop_path_rate: 0.2
+  output_strides: [4, 8, 16, 32]
+  stage_mixers: [ncssd, ncssd, ncssd, attention]

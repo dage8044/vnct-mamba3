@@ -1,4 +1,27 @@
-# Mamba
+# VNCT-Mamba3
+
+Research workspace for reproducing Vision Non-Causal Trapezoidal Mamba and
+adapting its multi-scale features to blind image quality assessment (BIQA).
+
+Current project modules:
+
+- `vnct/models/layers`: independent NC-SSD reference and 2D RoPE
+- `vnct/models/backbones`: classification-head-free VSSD backbone
+- `vnct/models/heads`: reserved for the BIQA quality head
+- `third_party/VSSD`: pinned upstream VSSD reference submodule
+- `docs/VSSD_REFERENCE.md`: provenance and repository layout
+
+Initialize reference submodules after cloning:
+
+```bash
+git submodule update --init --recursive
+```
+
+The NC-M3/VNCT operator and BIQA head will be implemented in the `vnct`
+package. The original Mamba implementation remains available below as the
+Mamba-3 kernel and theory reference.
+
+## Upstream Mamba
 
 ![Mamba](assets/selection.png "Selective State Space")
 > **Mamba: Linear-Time Sequence Modeling with Selective State Spaces**\
