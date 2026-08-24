@@ -1,0 +1,72 @@
+# Backbone ablation: unchanged VSSD-Small plus the exact complete BIQA modules
+# used by the learned NC-M3 experiment.
+model:
+  name: vnct_biqa
+  backbone: vssd_small_original
+  preset: vssd_iccv2025_camera_ready_small
+  pretrained: checkpoints/vssd_small_mesa.pth
+  out_indices: [0, 1, 2, 3]
+  feature_channels: [96, 192, 384, 768]
+  initialization_config: configs/models/initialization/train.yaml
+  mimo_rank: null
+  head: joint_stage_quality
+  training_policy: new_modules_only
+  trainable_groups:
+    [importance_selector, local_path, refinement, interaction, quality_head]
+
+selector:
+  name: learned_importance
+  revision: marginal_coverage_v3
+  input_domain: backbone_stage_features
+  stages: [0, 1, 2]
+  max_regions: 4
+  region_sizes: [5, 5, 5]
+  coverage_threshold: 0.8
+  candidate_stride: 1
+  decoder_kernel_size: 5
+  decoder: dwconv5_gelu_dwconv5_gelu_pwconv1_spatial_softmax
+  output_init_std: 0.001
+  supervision: final_loda_plcc_via_quality_aware_local_summary
+  auxiliary_loss_weight: 0.0
+
+local_path:
+  enabled: true
+  stages: [0, 1, 2, 3]
+  dilation: 2
+  ffn_ratio: 3.0
+  preserve_spatial_map: true
+
+refinement:
+  enabled: true
+  stages: [0, 1, 2]
+  roi_sizes: [5, 5, 5]
+  state_dims: [12, 24, 48]
+  num_heads: [4, 4, 8]
+  tokens_per_roi: 1
+  independent_regions: true
+  output: center_token
+  explicit_continuous_2d_position: true
+
+interaction:
+  name: unified_evidence_bank
+  local_grid_size: 7
+  local_tokens: 49
+  quality_summary_tokens: 1
+  max_regional_tokens: 4
+  inner_dims: [96, 192, 192, 192]
+  num_heads: 4
+  positional_encoding: continuous_2d_sincos
+  source_type_embedding: true
+  fusion: concat_linear_gelu_linear
+
+quality_head:
+  name: joint_stage_quality
+  grid_size: 7
+  tokens_per_stage: 49
+  embed_dim: 192
+  num_heads: 4
+  depth: 1
+  mlp_ratio: 3.0
+  dropout: 0.0
+  spatial_weight_init: uniform
+  stage_weight_init: uniform

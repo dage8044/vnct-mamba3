@@ -1,0 +1,7 @@
+# Exact function-preserving profile for checkpoint and equation tests.
+initialization:
+  profile: identity
+  ncm3_scale: 0.0
+  local_residual_scale: 0.0
+  refinement_residual_scale: 0.0
+  adapter_init_std: 0.02

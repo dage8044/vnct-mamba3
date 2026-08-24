@@ -1,0 +1,38 @@
+# Official LoDa protocol, mapped to the SCQ-Mamba data store.
+dataset:
+  name: livec
+  available: true
+  divide_dataset_per_gpu: true
+  root: /home/ssd/IQA/ChallengeDB_release
+  source_image_root: /home/ssd/IQA/ChallengeDB_release/Images
+  # This local CSV already contains the 1,162 samples left after LoDa's
+  # removal of the first seven entries; do not remove them a second time.
+  metadata: /home/ssd/IQA/ChallengeDB_release/image_labeled_by_score.csv
+  metadata_format: csv
+  image_column: image
+  score_column: mos
+  score_type: mos
+  exclude_first_raw_entries: 0
+  data_num: 1162
+  train_data_num: 930
+  test_data_num: 232
+  # Released LoDa LIVEChallengeDataset reads Images directly even though its
+  # preprocessing script also creates Images_384.
+  resize_shorter_edge: null
+  crop_size: 224
+  normalization: imagenet
+  split:
+    method: random_image_80_20
+    ratio: [0.8, 0.2]
+    seed: 3407
+    count: 1
+    implementation: sequential_in_place_shuffle
+    validation_indices: []
+train_transform:
+  patch_num: 5
+  random_crop: 224
+  random_horizontal_flip: 0.5
+  random_vertical_flip: 0.5
+test_transform:
+  patch_num: 15
+  random_crop: 224

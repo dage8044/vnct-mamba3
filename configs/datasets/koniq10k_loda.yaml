@@ -1,0 +1,51 @@
+# LoDa config source:
+# https://github.com/NeosXu/LoDa/tree/82304c20c34c1b5bd45f27bd7ab6e9104a285152/config
+# Absolute storage paths below are mapped from the sibling SCQ-Mamba project.
+dataset:
+  name: koniq10k
+  available: true
+  divide_dataset_per_gpu: true
+  root: /home/ssd/IQA/KonIQ-10K
+  source_image_root: /home/ssd/IQA/KonIQ-10K/1024x768
+  metadata: /home/ssd/IQA/KonIQ-10K/koniq10k_scores_and_distributions.csv
+  metadata_format: csv
+  image_column: image_name
+  score_column: MOS
+  score_type: mos
+  data_num: 10073
+  train_data_num: 8058
+  test_data_num: 2015
+
+  # Official LoDa preprocess downsizes the short edge to 384 and saves PNGs.
+  # We express the same resize in the runtime pipeline so no second image copy
+  # is required under /home/ssd/IQA.
+  resize_shorter_edge: 384
+  crop_size: 224
+  interpolation: bilinear
+  normalization:
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+
+  split:
+    method: random_image_80_20
+    ratio: [0.8, 0.2]
+    seed: 3407
+    count: 1
+    # LoDa shuffles one index list in place successively for split 0..9.
+    implementation: sequential_in_place_shuffle
+    validation_indices: []
+
+train_transform:
+  patch_num: 3
+  random_crop: 224
+  random_horizontal_flip: 0.5
+  random_vertical_flip: 0.5
+  to_tensor: true
+  normalize: imagenet
+
+test_transform:
+  patch_num: 15
+  # The released LoDa code uses RandomCrop, including at test time.
+  random_crop: 224
+  to_tensor: true
+  normalize: imagenet

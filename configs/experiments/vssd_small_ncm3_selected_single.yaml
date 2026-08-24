@@ -1,0 +1,8 @@
+# Fast selector ablation: K={2,4} with new modules only on LIVE and CLIVE.
+# Output names include K, so previous rank-1 and K=8 runs remain intact.
+protocol: loda_single_run_seed3407
+policies: [new_modules_only]
+selector_num_patches: [2, 4]
+experiments:
+  - configs/experiments/vssd_small_ncm3_live_loda.yaml
+  - configs/experiments/vssd_small_ncm3_livec_loda.yaml

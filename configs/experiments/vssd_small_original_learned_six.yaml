@@ -1,0 +1,13 @@
+# Original-VSSD backbone control. All downstream modules and data protocols
+# are identical to the NC-M3 learned-selector six-dataset experiment.
+protocol: original_vssd_backbone_control_seed3407_marginal_coverage_v3
+architecture_config: configs/models/vnct_biqa_vssd_small_original_learned.yaml
+policies: [new_modules_only]
+selector_num_patches: [4]
+experiments:
+  - configs/experiments/vssd_small_ncm3_live_learned_loda.yaml
+  - configs/experiments/vssd_small_ncm3_csiq_learned_loda.yaml
+  - configs/experiments/vssd_small_ncm3_livec_learned_loda.yaml
+  - configs/experiments/vssd_small_ncm3_tid2013_learned_loda.yaml
+  - configs/experiments/vssd_small_ncm3_kadid10k_learned_loda.yaml
+  - configs/experiments/vssd_small_ncm3_koniq10k_learned_loda.yaml

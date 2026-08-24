@@ -1,0 +1,41 @@
+# Official LoDa protocol, mapped to the SCQ-Mamba data store.
+dataset:
+  name: tid2013
+  available: true
+  divide_dataset_per_gpu: true
+  root: /home/ssd/IQA/tid2013
+  source_image_root: /home/ssd/IQA/tid2013/distorted_images
+  metadata: /home/ssd/IQA/tid2013/mos_with_names.txt
+  metadata_std: /home/ssd/IQA/tid2013/mos_std.txt
+  metadata_format: whitespace_score_filename
+  image_column: 1
+  score_column: 0
+  # The released score file mixes .bmp/.BMP while the local image names also
+  # vary in case; resolve names case-insensitively without renaming the data.
+  case_insensitive_filenames: true
+  score_type: mos
+  reference_from_filename: first_3_characters
+  data_num: 3000
+  train_data_num: 2400
+  test_data_num: 600
+  # Released LoDa TID2013Dataset reads distorted_images, not the generated
+  # distorted_images_384 directory.
+  resize_shorter_edge: null
+  crop_size: 224
+  normalization: imagenet
+  split:
+    method: reference_disjoint_80_20
+    ratio: [0.8, 0.2]
+    seed: 3407
+    count: 10
+    implementation: sequential_in_place_shuffle
+    reference_order: official_unsorted_set
+    validation_indices: []
+train_transform:
+  patch_num: 10
+  random_crop: 224
+  random_horizontal_flip: 0.5
+  random_vertical_flip: 0.5
+test_transform:
+  patch_num: 15
+  random_crop: 224

@@ -1,0 +1,11 @@
+# Corrected learned-selector experiment sequence on the six requested datasets.
+protocol: loda_seed3407_learned_marginal_coverage_v3
+policies: [new_modules_only]
+selector_num_patches: [4]
+experiments:
+  - configs/experiments/vssd_small_ncm3_live_learned_loda.yaml
+  - configs/experiments/vssd_small_ncm3_csiq_learned_loda.yaml
+  - configs/experiments/vssd_small_ncm3_livec_learned_loda.yaml
+  - configs/experiments/vssd_small_ncm3_tid2013_learned_loda.yaml
+  - configs/experiments/vssd_small_ncm3_kadid10k_learned_loda.yaml
+  - configs/experiments/vssd_small_ncm3_koniq10k_learned_loda.yaml

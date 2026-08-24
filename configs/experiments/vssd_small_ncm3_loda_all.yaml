@@ -1,0 +1,10 @@
+# Manifest matching LoDa's benchmark_loda_all.sh dataset order.
+protocol: loda_cvpr2024_release_82304c20
+experiments:
+  - configs/experiments/vssd_small_ncm3_biqa.yaml
+  - configs/experiments/vssd_small_ncm3_kadid10k_loda.yaml
+  - configs/experiments/vssd_small_ncm3_spaq_loda.yaml
+  - configs/experiments/vssd_small_ncm3_livec_loda.yaml
+  - configs/experiments/vssd_small_ncm3_live_loda.yaml
+  - configs/experiments/vssd_small_ncm3_tid2013_loda.yaml
+  - configs/experiments/vssd_small_ncm3_flive_loda.yaml

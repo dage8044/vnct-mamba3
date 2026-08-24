@@ -1,0 +1,8 @@
+# Performance profile: small non-zero NC-SSD/local residuals. The unified
+# evidence interaction has no scalar alpha/beta gates to calibrate.
+initialization:
+  profile: train
+  ncm3_scale: 0.01
+  local_residual_scale: 0.01
+  refinement_residual_scale: 0.01
+  adapter_init_std: 0.02

@@ -1,0 +1,36 @@
+# Single-run LoDa-style protocol mapped to the local CSIQ copy.
+dataset:
+  name: csiq
+  available: true
+  divide_dataset_per_gpu: true
+  root: /home/ssd/IQA/CSIQ/Train_images
+  source_image_root: /home/ssd/IQA/CSIQ/Train_images/all_dist_imgs
+  metadata: /home/ssd/IQA/CSIQ/Train_images/csiq_test.csv
+  metadata_format: csv
+  image_column: image
+  score_column: dmos
+  score_type: dmos
+  reference_mapping: filename_prefix_before_first_dot
+  data_num: 866
+  # Seed-3407 split of the 30 reference images: 24 train / 6 test references.
+  train_data_num: 694
+  test_data_num: 172
+  resize_shorter_edge: null
+  crop_size: 224
+  interpolation: bicubic
+  normalization: imagenet
+  split:
+    method: reference_disjoint_80_20
+    ratio: [0.8, 0.2]
+    seed: 3407
+    count: 1
+    implementation: sorted_reference_seeded_shuffle
+    validation_indices: []
+train_transform:
+  patch_num: 5
+  random_crop: 224
+  random_horizontal_flip: 0.5
+  random_vertical_flip: 0.5
+test_transform:
+  patch_num: 15
+  random_crop: 224

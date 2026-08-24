@@ -1,0 +1,16 @@
+model:
+  name: vnct_tiny
+  task: backbone
+  channels: [96, 192, 384, 768]
+  depths: [2, 2, 9, 2]
+  d_state: 64
+  ssm_head_dim: 64
+  attention_heads: 24
+  mimo_rank: 4
+  mlp_ratio: 3.0
+  expand: 2.0
+  rope_fraction: 0.5
+  chunk_size: 256
+  drop_path_rate: 0.2
+  output_strides: [4, 8, 16, 32]
+  stage_mixers: [nc_mamba3, nc_mamba3, nc_mamba3, attention]

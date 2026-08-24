@@ -1,0 +1,9 @@
+# Install after the CUDA-enabled PyTorch build in the VNCT environment.
+# These versions are verified with Python 3.11, torch 2.13.0+cu130.
+torchvision==0.28.0
+timm==0.4.12
+fvcore==0.1.5.post20221221
+Pillow==11.3.0
+scipy==1.16.1
+pandas==2.3.1
+PyYAML==6.0.3

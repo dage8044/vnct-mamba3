@@ -1,0 +1,39 @@
+# Official LoDa protocol, mapped to the SCQ-Mamba data store.
+dataset:
+  name: live
+  available: true
+  divide_dataset_per_gpu: true
+  root: /home/ssd/IQA/LIVE/Train_Images
+  source_image_root: /home/ssd/IQA/LIVE/Train_Images
+  metadata: /home/ssd/IQA/LIVE/Train_Images/test_.csv
+  metadata_format: csv
+  image_column: image
+  score_column: dmos
+  score_type: dmos
+  reference_mapping: distortion_subfolder_info_txt
+  data_num: 779
+  # The released script builds references through list(set(...)), whose order
+  # depends on PYTHONHASHSEED.  We sort before the seed-3407 shuffle so this
+  # single development split is reproducible across processes.
+  train_data_num: 615
+  test_data_num: 164
+  resize_shorter_edge: 384
+  crop_size: 224
+  interpolation: bicubic
+  normalization: imagenet
+  split:
+    method: reference_disjoint_80_20
+    ratio: [0.8, 0.2]
+    seed: 3407
+    count: 1
+    implementation: sequential_in_place_shuffle
+    reference_order: sorted_for_reproducibility
+    validation_indices: []
+train_transform:
+  patch_num: 5
+  random_crop: 224
+  random_horizontal_flip: 0.5
+  random_vertical_flip: 0.5
+test_transform:
+  patch_num: 15
+  random_crop: 224

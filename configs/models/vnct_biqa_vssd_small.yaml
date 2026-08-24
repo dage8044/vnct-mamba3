@@ -1,0 +1,65 @@
+# Canonical architecture shared by all LoDa-protocol dataset experiments.
+model:
+  name: vnct_biqa
+  backbone: vssd_small_ncm3
+  preset: vssd_iccv2025_camera_ready_small
+  pretrained: checkpoints/vssd_small_mesa.pth
+  out_indices: [0, 1, 2, 3]
+  feature_channels: [96, 192, 384, 768]
+  initialization_config: configs/models/initialization/train.yaml
+  mimo_rank: 4
+  head: joint_stage_quality
+  training_policy: new_modules_only
+  trainable_groups:
+    [ncm3_adapter, local_path, refinement, interaction, quality_head]
+
+selector:
+  name: mscn_ggd
+  input_domain: unnormalized_rgb_0_1
+  patch_size: 56
+  patch_stride: 56
+  num_patches: 8
+  local_kernel_size: 7
+  local_sigma: 1.1666666667
+  # Engineering baseline; the exact DPSF distance is not publicly specified.
+  distance: log_ggd_parameter_l2
+
+local_path:
+  enabled: true
+  stages: [0, 1, 2, 3]
+  dilation: 2
+  ffn_ratio: 3.0
+  preserve_spatial_map: true
+
+refinement:
+  enabled: true
+  stages: [0, 1, 2]
+  roi_sizes: [14, 7, 4]
+  state_dims: [12, 24, 48]
+  num_heads: [4, 4, 8]
+  tokens_per_roi: 1
+  independent_regions: true
+  output: center_token
+
+interaction:
+  name: unified_evidence_bank
+  local_grid_size: 7
+  local_tokens: 49
+  regional_tokens: selector_num_patches
+  inner_dims: [96, 192, 192, 192]
+  num_heads: 4
+  positional_encoding: continuous_2d_sincos
+  source_type_embedding: true
+  fusion: concat_linear_gelu_linear
+
+quality_head:
+  name: joint_stage_quality
+  grid_size: 7
+  tokens_per_stage: 49
+  embed_dim: 192
+  num_heads: 4
+  depth: 1
+  mlp_ratio: 3.0
+  dropout: 0.0
+  spatial_weight_init: uniform
+  stage_weight_init: uniform

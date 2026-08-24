@@ -4,3 +4,11 @@ build/
 **.so
 *.hip
 *_hip.*
+
+# Local BIQA data, pretrained weights, and experiment artifacts.
+/checkpoints/
+*.pt
+*.pth
+/data/
+/outputs/
+/wandb/

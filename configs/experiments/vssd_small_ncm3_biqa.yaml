@@ -1,0 +1,159 @@
+# VSSD-Small/NC-M3 architecture under the released LoDa KonIQ-10k protocol.
+# LoDa source commit: 82304c20c34c1b5bd45f27bd7ab6e9104a285152
+experiment:
+  architecture_config: configs/models/vnct_biqa_vssd_small.yaml
+  project_name: vnct_loda
+  name: vssd_small_ncm3_koniq10k_split${split_index}
+  run_group: vssd_small_ncm3_koniq10k_loda
+  output_dir: outputs/${experiment.run_group}/${experiment.name}
+  random_seed: 3407
+  train_test_num: 1
+  num_splits: 1
+  split_index: 0
+
+model:
+  backbone: vssd_small_ncm3
+  preset: vssd_iccv2025_camera_ready_small
+  pretrained: checkpoints/vssd_small_mesa.pth
+  out_indices: [0, 1, 2, 3]
+  feature_channels: [96, 192, 384, 768]
+  initialization_config: configs/models/initialization/train.yaml
+  mimo_rank: 4
+  head: joint_stage_quality
+  # LoDa freezes its pretrained ViT/CNN and trains only the learner. The
+  # equivalent VNCT policy trains the new NC-M3 adapter and BIQA head only.
+  training_policy: new_modules_only
+  trainable_groups:
+    [ncm3_adapter, local_path, refinement, interaction, quality_head]
+
+# Fixed first-stage selector baseline inspired by DPSF. DPSF publicly reports
+# patch_size=56 and num_patches=8. Its exact candidate stride and distribution
+# distance are not public; this baseline makes both assumptions explicit.
+selector:
+  name: mscn_ggd
+  input_domain: unnormalized_rgb_0_1
+  patch_size: 56
+  patch_stride: 56
+  num_patches: 8
+  local_kernel_size: 7
+  local_sigma: 1.1666666667
+  distance: log_ggd_parameter_l2
+
+local_path:
+  enabled: true
+  stages: [0, 1, 2, 3]
+  dilation: 2
+  ffn_ratio: 3.0
+  residual_scale_init: 0.01
+  preserve_spatial_map: true
+
+refinement:
+  enabled: true
+  stages: [0, 1, 2]
+  roi_sizes: [14, 7, 4]
+  state_dims: [12, 24, 48]
+  num_heads: [4, 4, 8]
+  tokens_per_roi: 1
+  independent_regions: true
+  output: center_token
+  residual_scale_init: 0.01
+
+interaction:
+  name: unified_evidence_bank
+  equation: concat_linear_gelu_linear
+  local_grid_size: 7
+  local_tokens: 49
+  regional_tokens: selector_num_patches
+  inner_dims: [96, 192, 192, 192]
+  num_heads: 4
+  positional_encoding: continuous_2d_sincos
+  source_type_embedding: true
+  fusion: concat_linear_gelu_linear
+
+quality_head:
+  name: joint_stage_quality
+  grid_size: 7
+  tokens_per_stage: 49
+  embed_dim: 192
+  num_heads: 4
+  depth: 1
+  mlp_ratio: 3.0
+  dropout: 0.0
+  spatial_weight_init: uniform
+  stage_weight_init: uniform
+
+data:
+  config: configs/datasets/koniq10k_loda.yaml
+  name: koniq10k
+  root: /home/ssd/IQA/KonIQ-10K
+  image_root: /home/ssd/IQA/KonIQ-10K/1024x768
+  metadata: /home/ssd/IQA/KonIQ-10K/koniq10k_scores_and_distributions.csv
+  image_column: image_name
+  score_column: MOS
+  train_data_num: 8058
+  test_data_num: 2015
+  resize_shorter_edge: 384
+  crop_size: 224
+  split_seed: 3407
+  split_count: 1
+
+train:
+  epochs: 10
+  patch_num: 3
+  batch_size: 128
+  num_workers: 10
+  shuffle: true
+  pin_memory: true
+  drop_last: true
+  random_horizontal_flip: 0.5
+  random_vertical_flip: 0.5
+
+test:
+  patch_num: 15
+  batch_size: 512
+  num_workers: 10
+  shuffle: false
+  pin_memory: true
+  drop_last: false
+  crop: random
+  aggregate_patches: mean
+  evaluate_every_epoch: true
+  select_epoch: last
+
+optimizer:
+  name: adamw
+  learning_rate: 0.0003
+  weight_decay: 0.01
+
+scheduler:
+  name: cosine_annealing
+  step_unit: optimizer_step
+  # Exact expression in LoDa:
+  # 8058 train images * 3 patches * 10 epochs // (128 batch * 1 GPU)
+  t_max: 1888
+  eta_min: 0.0
+
+loss:
+  name: loda_plcc
+  weight: 1.0
+
+evaluation:
+  metrics: [srcc, plcc, rmse]
+  srcc_input: raw_patch_mean_predictions
+  plcc_mapping: four_parameter_logistic_vqeg
+  rmse_mapping: four_parameter_logistic_vqeg
+  split_reduction: median
+  report: [median_srcc, median_plcc]
+
+runtime:
+  device: cuda:0
+  gpu_count: 1
+  divide_dataset_per_gpu: true
+  amp: false
+  checkpoint_every_epoch: true
+  training_state_every_epoch: true
+  wandb_mode: offline
+  wandb_save_model: false
+  wandb_save_code: true
+  tensorboard: false
+  strict_checkpoint_load: false

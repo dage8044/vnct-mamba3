@@ -1,0 +1,66 @@
+# VSSD-Small/NC-M3 under the released LoDa SPAQ protocol.
+experiment:
+  architecture_config: configs/models/vnct_biqa_vssd_small.yaml
+  project_name: vnct_loda
+  name: vssd_small_ncm3_spaq_split${split_index}
+  run_group: vssd_small_ncm3_spaq_loda
+  output_dir: outputs/${experiment.run_group}/${experiment.name}
+  random_seed: 3407
+  train_test_num: 1
+  num_splits: 10
+  split_index: 0
+model:
+  backbone: vssd_small_ncm3
+  preset: vssd_iccv2025_camera_ready_small
+  pretrained: checkpoints/vssd_small_mesa.pth
+  out_indices: [0, 1, 2, 3]
+  feature_channels: [96, 192, 384, 768]
+  initialization_config: configs/models/initialization/train.yaml
+  mimo_rank: 4
+  head: joint_stage_quality
+  freeze_pretrained_backbone: true
+  trainable_groups: [ncm3_adapter, local_path, refinement, interaction, quality_head]
+data:
+  config: configs/datasets/spaq_loda.yaml
+  name: spaq
+  available: false
+  train_data_num: 8900
+  test_data_num: 2225
+  split_seed: 3407
+  split_count: 10
+train:
+  epochs: 10
+  patch_num: 3
+  batch_size: 128
+  num_workers: 10
+  shuffle: true
+  pin_memory: true
+  drop_last: true
+test:
+  patch_num: 15
+  batch_size: 512
+  num_workers: 10
+  shuffle: false
+  pin_memory: true
+  drop_last: false
+  crop: random
+  aggregate_patches: mean
+  evaluate_every_epoch: true
+  select_epoch: last
+optimizer: {name: adamw, learning_rate: 0.0003, weight_decay: 0.01}
+scheduler: {name: cosine_annealing, step_unit: optimizer_step, t_max: 2085, eta_min: 0.0}
+loss: {name: loda_plcc, weight: 1.0}
+evaluation:
+  metrics: [srcc, plcc, rmse]
+  srcc_input: raw_patch_mean_predictions
+  plcc_mapping: four_parameter_logistic_vqeg
+  rmse_mapping: four_parameter_logistic_vqeg
+  split_reduction: median
+  report: [median_srcc, median_plcc]
+runtime:
+  device: cuda
+  gpu_count: 1
+  amp: false
+  checkpoint_every_epoch: true
+  training_state_every_epoch: true
+  wandb_mode: offline

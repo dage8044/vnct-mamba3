@@ -5,8 +5,13 @@ submodule at `third_party/VSSD`. The upstream repository does not currently
 publish a repository-level license, so its source is retained for provenance
 and comparison rather than copied into the `vnct` package.
 
-The code under `vnct/` is an independent, BIQA-oriented implementation of the
-published NC-SSD structure:
+The code under `vnct/` has two deliberately separate tracks:
+
+- `vssd.py` and `nc_ssd.py` are independent structural references.
+- `vssd_small_ncm3.py` subclasses the pinned camera-ready VSSD hierarchy so
+  official Small checkpoint names and shapes remain unchanged.
+
+The BIQA-oriented layout is:
 
 - `vnct/models/layers/`: scan-free token mixers and 2D position encoding
 - `vnct/models/backbones/`: multi-scale vision feature extractors
@@ -16,6 +21,15 @@ published NC-SSD structure:
 
 The VSSD backbone deliberately returns feature maps at strides 4, 8, 16 and
 32 and does not include an ImageNet classification head.
+
+The verified camera-ready Small checkpoint is available from
+`YuhengSSS/VSSD_ICCV_weights` on Hugging Face as `vssd_small_mesa.pth`. It is
+stored locally at `checkpoints/vssd_small_mesa.pth` and excluded from Git.
+The downloaded file used for verification had SHA-256:
+
+```text
+b6ba63def9418f15eef538d583fad6f9934ac89520598b7efe62e7a21cc74898
+```
 
 Clone this project with its reference implementation:
 

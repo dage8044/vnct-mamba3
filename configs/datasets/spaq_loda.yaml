@@ -1,0 +1,37 @@
+# Official LoDa protocol. SPAQ is not currently present in /home/ssd/IQA.
+dataset:
+  name: spaq
+  available: false
+  divide_dataset_per_gpu: true
+  root: /home/ssd/IQA/SPAQ
+  source_image_root: /home/ssd/IQA/SPAQ/TestImage
+  metadata: /home/ssd/IQA/SPAQ/Annotations/MOS and Image attribute scores.xlsx
+  scene_metadata: /home/ssd/IQA/SPAQ/Annotations/Scene category labels.xlsx
+  exif_metadata: /home/ssd/IQA/SPAQ/Annotations/EXIF_tags.xlsx
+  metadata_format: xlsx
+  image_column: Image name
+  score_column: MOS
+  score_type: mos
+  exif_transpose: true
+  data_num: 11125
+  train_data_num: 8900
+  test_data_num: 2225
+  resize_shorter_edge: 384
+  crop_size: 224
+  interpolation: bilinear
+  normalization: imagenet
+  split:
+    method: random_image_80_20
+    ratio: [0.8, 0.2]
+    seed: 3407
+    count: 10
+    implementation: sequential_in_place_shuffle
+    validation_indices: []
+train_transform:
+  patch_num: 3
+  random_crop: 224
+  random_horizontal_flip: 0.5
+  random_vertical_flip: 0.5
+test_transform:
+  patch_num: 15
+  random_crop: 224

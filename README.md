@@ -5,11 +5,19 @@ adapting its multi-scale features to blind image quality assessment (BIQA).
 
 Current project modules:
 
-- `vnct/models/layers`: independent NC-SSD reference and 2D RoPE
-- `vnct/models/backbones`: classification-head-free VSSD backbone
-- `vnct/models/heads`: reserved for the BIQA quality head
+- `vnct/models/layers`: NC-SSD, second-order NC-M3, and 2D RoPE
+- `vnct/models/backbones`: checkpoint-compatible VSSD-Small/NC-M3 and paper-reference backbones
+- `vnct/models/refinement`: selected-region ROI alignment and NC-SSD refinement
+- `vnct/models/interactions`: parallel local/refinement cross-attention
+- `vnct/models/heads`: joint four-stage quality prediction
+- `vnct/data`, `vnct/losses`, `vnct/metrics`: dataset-neutral BIQA components
+- `configs/experiments`: reproducible backbone/training/evaluation settings
 - `third_party/VSSD`: pinned upstream VSSD reference submodule
 - `docs/VSSD_REFERENCE.md`: provenance and repository layout
+- `docs/VNCT_IMPLEMENTATION.md`: backbone equation mapping and assumptions
+- `docs/VNCT_BIQA_DESIGN.md`: fixed end-to-end BIQA architecture
+- `docs/VNCT_BIQA_IMPLEMENTATION_PLAN.md`: module and verification plan
+- `docs/BIQA_PROJECT_STRUCTURE.md`: project layout and experimental boundaries
 
 Initialize reference submodules after cloning:
 
@@ -17,9 +25,135 @@ Initialize reference submodules after cloning:
 git submodule update --init --recursive
 ```
 
-The NC-M3/VNCT operator and BIQA head will be implemented in the `vnct`
-package. The original Mamba implementation remains available below as the
-Mamba-3 kernel and theory reference.
+The primary BIQA route is the ICCV 2025 camera-ready VSSD-Small hierarchy
+(`2/4/15/4` blocks, MLP ratio 3). It keeps every official VSSD parameter name
+and shape, adds checkpoint-compatible rank-4 MIMO, data-dependent decay, and
+second-order trapezoidal dynamics, and returns four feature maps at strides 4,
+8, 16, and 32. The BIQA modules remain separately testable so backbone, local,
+refinement, interaction, and head ablations do not become entangled.
+
+```python
+from vnct.models.backbones.vssd_small_ncm3 import vssd_small_ncm3
+
+backbone = vssd_small_ncm3(
+    pretrained="checkpoints/vssd_small_mesa.pth",
+    ncm3_scale_init=0.0,  # exact identity/checkpoint verification
+    mimo_rank=4,
+)
+features = backbone(images)
+```
+
+The complete model keeps normalized backbone input and raw selector input
+explicitly separate:
+
+```python
+from vnct.models import vssd_small_ncm3_biqa
+
+model = vssd_small_ncm3_biqa(
+    pretrained="checkpoints/vssd_small_mesa.pth",
+    ncm3_scale_init=0.01,
+    mimo_rank=4,
+)
+score = model(
+    backbone_image=imagenet_normalized_crop,
+    selector_image=rgb_zero_to_one_crop,
+)
+```
+
+Training uses `configs/models/initialization/train.yaml`: NC-M3, local, and
+refinement residuals begin at `0.01`. The unified evidence interaction directly
+generates each stage feature and therefore has no alpha/beta residual gates or
+gate-calibration pass. The identity profile remains available for backbone and
+residual-branch verification; it does not bypass the feature-generating
+interaction.
+Rank and initialization profile are included in the default result directory,
+for example `outputs/live/new_modules_only/rank4_train_seed3407`, so these runs
+do not overwrite earlier rank-1 results.
+
+Clone the repository with its VSSD submodule and install the verified additions
+inside the `VNCT` environment:
+
+```bash
+git clone --recurse-submodules https://github.com/dage8044/vnct-mamba3.git
+cd vnct-mamba3
+conda activate VNCT
+pip install -r requirements/biqa.txt
+python tools/inspect_backbone.py --checkpoint checkpoints/vssd_small_mesa.pth
+```
+
+The pretrained `vssd_small_mesa.pth` is intentionally not committed. Download
+it from the official `YuhengSSS/VSSD_ICCV_weights` Hugging Face repository and
+place it at `checkpoints/vssd_small_mesa.pth`. Datasets and experiment outputs
+are also excluded. On another machine, update `root`, `source_image_root`, and
+`metadata` in the required `configs/datasets/*_loda.yaml` files before running
+`tools/validate_loda_configs.py`.
+
+The current development screen uses one fixed seed-3407 split for LIVE,
+LIVEC, CSIQ, and KonIQ-10k under both supported parameter policies. Inspect the
+eight commands without starting training:
+
+```bash
+python tools/run_selected_biqa.py --dry-run
+```
+
+Run one experiment directly with either `new_modules_only` or `full`:
+
+```bash
+python tools/train_biqa.py \
+  --config configs/experiments/vssd_small_ncm3_biqa.yaml \
+  --policy new_modules_only \
+  --device cuda:0
+```
+
+The learned-routing model replaces MSCN/GGD with three MOS-trained stage maps.
+Each stage greedily proposes at most four `5 x 5` ROIs by marginal uncovered
+importance, activates the shortest proposal prefix reaching budget-relative
+coverage 0.8, and independently reprocesses every active ROI with Region
+NC-SSD. The 49 local tokens, one quality-aware summary, and regional center
+tokens form one evidence bank. Run the fixed LIVE split on GPU 0 with:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/train_biqa.py \
+  --config configs/experiments/vssd_small_ncm3_live_learned_loda.yaml \
+  --policy new_modules_only \
+  --device cuda:0
+```
+
+Run the corrected learned selector once on LIVE, CSIQ, LIVEC/CLIVE, TID2013,
+KADID-10K, and KonIQ-10k in that order on GPU 0:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/run_selected_biqa.py \
+  --manifest configs/experiments/vssd_small_ncm3_learned_six.yaml \
+  --device cuda:0
+```
+
+The manifest uses only `new_modules_only`, maximum K=4, threshold 0.8, seed
+3407, and the `marginal_coverage_v3` configuration. The only training objective
+is the final LoDa PLCC loss. LIVE, TID2013, and
+KADID-10K are reference-disjoint; KADID consequently uses 8,125/2,000 images
+rather than LoDa's image-count split of 8,100/2,025. After training,
+`tools/visualize_selector.py` displays each stage's learned map, active
+marginal-coverage boxes, normalized gain shares, and the final quality-head
+map.
+
+To isolate the NC-M3 backbone conversion, run the same six protocols with the
+unchanged VSSD-Small backbone while retaining every downstream BIQA module:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/run_selected_biqa.py \
+  --manifest configs/experiments/vssd_small_original_learned_six.yaml \
+  --device cuda:0
+```
+
+Run the strict local-only ablation, with no selector or additional SSD path:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/train_biqa.py \
+  --config configs/experiments/vssd_small_ncm3_live_local_only_loda.yaml \
+  --policy new_modules_only \
+  --device cuda:0
+```
 
 ## Upstream Mamba
 
